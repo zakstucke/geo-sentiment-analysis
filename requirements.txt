@@ -1,0 +1,6 @@
+black==22.1.0
+flake8==3.7.9
+notebook==6.4.3
+ipython==7.31.0
+requests==2.27.1
+pandas==1.4.1
