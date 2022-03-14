@@ -1,5 +1,6 @@
 import pandas as pd
-
+from core.twitter_scraper import TwitterScraper
+import json
 #whole dataset -> pandas frame
 #data = pd.read_csv('covidvaccine.csv')
 
@@ -9,5 +10,18 @@ import pandas as pd
 #                       hashtags,source,is_retweet
 
 #import with only certain columns
-data = pd.read_csv('covidvaccine.csv', usecols= ['user_location','date', 'text'])
-print(data.head())
+def CSVTweetReader():
+    df = pd.read_csv('covidvaccine.csv', usecols= ['user_location','date', 'text'])
+    return df
+
+
+#takes tweet ids which can be from CSV and return tweet text and geo data 
+#input format id,id e.g fetchTweet("1261326399320715264,1278347468690915330")
+#returns pd dataframe
+def fetchTweet(ids):
+    scraper = TwitterScraper()
+    resObj = scraper._get_tweets_by_id(ids)
+    df = pd.json_normalize(resObj, record_path=["data"])
+    return df
+
+
