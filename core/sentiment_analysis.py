@@ -54,3 +54,22 @@ def create_bias(df, text_column_name):
     df = df.apply(analyze_bias, axis=1)
 
     return df
+
+def create_cleaned(df, text_column_name):
+    fields = ["split_words","no_punctuation","no_filler"]
+    for field in fields:
+        df[field] = np.nan
+    
+    splitWords = cleaner.splitToWords(df)
+    df["split_words"] = splitWords
+    stripPunctuation = cleaner.stripPunctuation(splitWords)
+    df["no_punctuation"] = stripPunctuation
+    stripFillerWords = cleaner.stripFillerWords(stripPunctuation)
+    df["no_filler"] = stripFillerWords
+    return df
+
+import pandas as pd
+import cleaner
+df = pd.DataFrame({"text": ["What a great day", "Today is awful", "I'm so happy", "Looking forward to a great day tomorrow.", "Yesterday was scary"]})
+df = create_cleaned(df,"text")
+print(df)
