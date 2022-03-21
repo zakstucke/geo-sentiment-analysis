@@ -1,37 +1,32 @@
-from core.twitter_scraper import TwitterScraper
-import cleaner
-import scraper
 import pandas as pd
-def cleanerTest():
-    df = pd.read_csv("covidvaccine.csv", usecols= ["text"])
-    print(df)
-    betterDF = []
-    counter = 0
-    for x in df["text"].values:
-        if counter == 100:
-            break
-        betterDF.append(x)
-        counter += 1
-    df = betterDF
-    splitWords = cleaner.splitToWords(df)
-    print("###############WORDS")
-    print(splitWords)
-    stripPunctuation = cleaner.stripPunctuation(splitWords)
-    print("###############PUNCTUATION")
-    print(stripPunctuation)
-    stripFillerWords = cleaner.stripFillerWords(stripPunctuation)
-    print("###############FILLER")
-    print(stripFillerWords)
+
+# from core.twitter_scraper import TwitterScraper
+from core.sentiment_analysis import create_emotions, create_bias, create_cleaned, create_geo
+
+pd.set_option("display.max_rows", 50)
+pd.set_option("display.max_columns", 50)
+
 
 def main():
-    #tweetScraper = TwitterScraper()
-    
-    #data = tweetScraper.get_recent_tweets("Ukraine", max_tweets_about=10)
-    #singleTweet = cleaner.getSingleTweet(data)
-    #print(singleTweet)
-    #tweetTextList = cleaner.getText(data)
-    #for tweet in tweetTextList:
+    # tweetScraper = TwitterScraper()
+
+    # data = tweetScraper.get_recent_tweets("Ukraine", max_tweets_about=10)
+    # singleTweet = cleaner.getSingleTweet(data)
+    # print(singleTweet)
+    # tweetTextList = cleaner.getText(data)
+    # for tweet in tweetTextList:
     #    print(tweet)
-    cleanerTest()
+    # cleanerTest()
+
+    df = pd.read_csv("covidvaccine.csv", nrows=10)
+
+    df = create_cleaned(df, "text")
+    df = create_bias(df, "text")
+    df = create_emotions(df, "text")
+    df = create_geo(df, "user_location")
+
+    print(df)
+
+
 if __name__ == "__main__":
     main()

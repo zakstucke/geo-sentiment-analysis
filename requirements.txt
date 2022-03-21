@@ -6,3 +6,8 @@ requests==2.27.1
 pandas==1.4.1
 nltk==3.7
 NRCLex==3.0.0
+geopy==2.2.0
+
+spacy==2.3.5
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.2.0/en_core_web_sm-2.2.0.tar.gz#egg=en_core_web_sm
+

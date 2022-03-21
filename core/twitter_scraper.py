@@ -1,10 +1,6 @@
-from urllib import response
-from wsgiref import headers
 import requests
 import math
 from requests.models import PreparedRequest
-
-import settings
 
 TOKEN_TWITTER = "Bearer AAAAAAAAAAAAAAAAAAAAAPT%2FNAEAAAAAwK6N9D%2FcN4TCGS34qJp5qtjNXp8%3DxFovyPVqTPMgBJkVFCgpGapuoFwLXt7aEFFUJc0tTac8FNQ0Rn"
 
@@ -48,20 +44,22 @@ class TwitterScraper:
         pass
 
     def _get_tweets_by_id(self, ids):
-        params = {"ids":ids,
-                "tweet.fields": "text,geo,lang",
-                "expansions": "author_id,geo.place_id",
-                "user.fields": "location",
-                "place.fields": "contained_within,country,country_code,full_name,geo,id,name,place_type",}
+        params = {
+            "ids": ids,
+            "tweet.fields": "text,geo,lang",
+            "expansions": "author_id,geo.place_id",
+            "user.fields": "location",
+            "place.fields": "contained_within,country,country_code,full_name,geo,id,name,place_type",
+        }
 
         req = PreparedRequest()
-        req.prepare_url(TWEET_BY_ID_URL ,params)
-        
+        req.prepare_url(TWEET_BY_ID_URL, params)
+
         response = requests.get(req.url, headers={"Authorization": TOKEN_TWITTER})
         return response.json()
 
     def _get_recent_tweets(self, query, next_token=None):
-        
+
         # https://developer.twitter.com/en/docs/twitter-api/tweets/search/quick-start/recent-search
 
         params = {

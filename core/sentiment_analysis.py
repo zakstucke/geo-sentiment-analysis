@@ -1,7 +1,12 @@
 import numpy as np
 import nltk
+import string
+
+from geopy.geocoders import Nominatim
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nrclex import NRCLex
+
+from core.cleaner import stripFillerWords
 
 nltk.download("punkt")
 nltk.download("vader_lexicon")
@@ -55,21 +60,60 @@ def create_bias(df, text_column_name):
 
     return df
 
+
 def create_cleaned(df, text_column_name):
-    fields = ["split_words","no_punctuation","no_filler"]
+    fields = ["cleaned_words"]
     for field in fields:
         df[field] = np.nan
-    
-    splitWords = cleaner.splitToWords(df)
-    df["split_words"] = splitWords
-    stripPunctuation = cleaner.stripPunctuation(splitWords)
-    df["no_punctuation"] = stripPunctuation
-    stripFillerWords = cleaner.stripFillerWords(stripPunctuation)
-    df["no_filler"] = stripFillerWords
+
+    def clean(row):
+
+        text = row[text_column_name]
+        # First remove punctuation:
+        text = text.translate(str.maketrans("", "", string.punctuation))
+
+        # Split text into words:
+        words = text.split()
+
+        # Remove filler words:
+        cleaned_words = stripFillerWords(words)
+
+        row["cleaned_words"] = cleaned_words
+
+        return row
+
+    df = df.apply(clean, axis=1)
+
     return df
 
-import pandas as pd
-import cleaner
-df = pd.DataFrame({"text": ["What a great day", "Today is awful", "I'm so happy", "Looking forward to a great day tomorrow.", "Yesterday was scary"]})
-df = create_cleaned(df,"text")
-print(df)
+
+def create_geo(df, address_column_name):
+    # Adds in the lat long, city and country for the geo information if readable
+
+    fields = ["lat", "long", "city", "country", "country_code"]
+    for field in fields:
+        df[field] = np.nan
+
+    geolocator = Nominatim(user_agent="bristol_geo_sentiment_analysis_project")
+
+    def _create_geo(row):
+        address = row[address_column_name]
+
+        location = geolocator.geocode(address, exactly_one=True, addressdetails=True)
+        if location:
+            row["lat"] = location.latitude
+            row["long"] = location.longitude
+
+            if "address" in location.raw:
+                if "city" in location.raw["address"]:
+                    row["city"] = location.raw["address"]["city"]
+                if "country" in location.raw["address"]:
+                    row["country"] = location.raw["address"]["country"]
+                if "country_code" in location.raw["address"]:
+                    row["country_code"] = location.raw["address"]["country_code"]
+
+        return row
+
+    df = df.apply(_create_geo, axis=1)
+
+    return df
