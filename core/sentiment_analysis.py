@@ -1,8 +1,11 @@
 import numpy as np
 import nltk
+import time
 import string
+import asyncio
 
-from geopy.geocoders import Nominatim
+from geopy.adapters import AioHTTPAdapter
+import geopy.geocoders as geocoders
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nrclex import NRCLex
 
@@ -10,6 +13,80 @@ from core.cleaner import stripFillerWords
 
 nltk.download("punkt")
 nltk.download("vader_lexicon")
+
+timeout = 100
+
+nom = geocoders.Nominatim(
+    timeout=timeout,
+    user_agent="bristol_geo_sentiment_analysis_project",
+    adapter_factory=AioHTTPAdapter,
+)
+
+arc = geocoders.ArcGIS(
+    timeout=timeout,
+    adapter_factory=AioHTTPAdapter,
+)
+
+bing = geocoders.Bing(
+    "AjFp_gjCldIwKBM50GFJNbIDP1nZdvDgqGHDBN3rU9Ro7-OUoV0mEmk3OkMi5brF",
+    timeout=timeout,
+    adapter_factory=AioHTTPAdapter,
+)
+
+
+async def nomanatim_call(address):
+    result = {"lat": None, "long": None, "city": None, "country_code": None}
+    location = await nom.geocode(address, exactly_one=True, addressdetails=True)
+    if location:
+        result["lat"] = location.latitude
+        result["long"] = location.longitude
+
+        if "address" in location.raw:
+            if "city" in location.raw["address"]:
+                result["city"] = location.raw["address"]["city"]
+            if "country_code" in location.raw["address"]:
+                result["country_code"] = location.raw["address"]["country_code"]
+
+    return result
+
+
+async def arc_call(address):
+    result = {"lat": None, "long": None, "city": None, "country_code": None}
+    location = await arc.geocode(
+        address, exactly_one=True, out_fields=["City", "Country", "CountryCode"]
+    )
+    if location:
+        result["lat"] = location.latitude
+        result["long"] = location.longitude
+
+        if "attributes" in location.raw:
+            if "City" in location.raw["attributes"]:
+                result["city"] = location.raw["attributes"]["City"]
+            if "CountryCode" in location.raw["attributes"]:
+                result["country_code"] = location.raw["attributes"]["CountryCode"]
+
+    return result
+
+
+async def bing_call(address):
+    result = {"lat": None, "long": None, "city": None, "country_code": None}
+    location = await bing.geocode(
+        address, exactly_one=True, include_neighborhood=True, include_country_code=True
+    )
+    if location:
+
+        if "address" in location.raw:
+            if "locality" in location.raw["address"]:
+                result["city"] = location.raw["address"]["locality"]
+            if "countryRegionIso2" in location.raw["address"]:
+                result["country_code"] = location.raw["address"]["countryRegionIso2"]
+
+    return result
+
+
+geo_funcs = [nomanatim_call, arc_call, bing_call]
+rate_limit = 1  # Time to async sleep for each source after a call
+num_geolocator_agents = len(geo_funcs)
 
 
 def create_emotions(df, text_column_name):
@@ -88,32 +165,61 @@ def create_cleaned(df, text_column_name):
 
 
 def create_geo(df, address_column_name):
-    # Adds in the lat long, city and country for the geo information if readable
+    assert address_column_name in df, (df.columns, address_column_name)
 
-    fields = ["lat", "long", "city", "country", "country_code"]
+    rows_parsed = 0
+    no_of_rows = df.shape[0]
+
+    if "index" not in df:
+        df.reset_index(inplace=True)
+
+    indexes_needing_parsing = df["index"].values.tolist()
+    # Split the indexes between the agents:
+    # agent_index_splits = np.array_split(indexes, num_geolocator_agents)
+
+    fields = ["lat", "long", "city", "country_code"]
+
+    async def parse_addresses(geo_func):
+        nonlocal df
+        nonlocal rows_parsed
+        nonlocal no_of_rows
+        nonlocal fields
+
+        last_call_time = 0
+        while indexes_needing_parsing:
+            index = indexes_needing_parsing.pop(0)
+
+            address = df.iloc[index][address_column_name]
+
+            # Only doing if valid string address:
+            if type(address) == str:
+                time_since_last_call = time.time() - last_call_time
+
+                # To prevent throttling limit call rate to rate_limit seconds:
+                if time_since_last_call < rate_limit:
+                    await asyncio.sleep(rate_limit - time_since_last_call)
+
+                result = await geo_func(address)
+                last_call_time = time.time()
+
+                for field in fields:
+                    assert field in result, result
+
+                    if result[field]:
+                        df.at[index, field] = result[field]
+
+                await asyncio.sleep(rate_limit)
+
+            rows_parsed += 1
+            print("{}/{} addresses parsed.".format(rows_parsed, no_of_rows))
+
+    # Adds in the lat long, city and country for the geo information if readable
+    print("Parsing geo info...")
+
     for field in fields:
         df[field] = np.nan
 
-    geolocator = Nominatim(user_agent="bristol_geo_sentiment_analysis_project")
-
-    def _create_geo(row):
-        address = row[address_column_name]
-
-        location = geolocator.geocode(address, exactly_one=True, addressdetails=True)
-        if location:
-            row["lat"] = location.latitude
-            row["long"] = location.longitude
-
-            if "address" in location.raw:
-                if "city" in location.raw["address"]:
-                    row["city"] = location.raw["address"]["city"]
-                if "country" in location.raw["address"]:
-                    row["country"] = location.raw["address"]["country"]
-                if "country_code" in location.raw["address"]:
-                    row["country_code"] = location.raw["address"]["country_code"]
-
-        return row
-
-    df = df.apply(_create_geo, axis=1)
+    tasks = [parse_addresses(func) for func in geo_funcs]
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
 
     return df

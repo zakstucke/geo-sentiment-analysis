@@ -1,5 +1,7 @@
 import spacy
 
+nlp = spacy.load("en_core_web_sm")
+
 
 def getSingleTweet(data):  # Used for original Main data scraped by TwitterScraper
     # Dictionary has 2 keys
@@ -34,7 +36,6 @@ def stripFillerWords(
 ):  # Takes a list of words as input and returns list with filler/stop words removed
 
     # Remove normal filler words (so, was etc):
-    nlp = spacy.load("en_core_web_sm")
     result = [word for word in words if word not in nlp.Defaults.stop_words]
 
     return result

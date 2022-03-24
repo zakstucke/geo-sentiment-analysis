@@ -1,3 +1,4 @@
+import pandas as pd
 import requests
 import math
 from requests.models import PreparedRequest
@@ -11,6 +12,11 @@ MAX_TWEETS_PER_CALL = 100
 
 # Would require applying for an academic licence key (currently only have standard)
 # ALL_TWEETS_URL = "https://api.twitter.com/2/tweets/search/all"
+
+
+def get_chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
 
 
 # Merges obj2 into obj1
@@ -46,7 +52,7 @@ class TwitterScraper:
     def _get_tweets_by_id(self, ids):
         params = {
             "ids": ids,
-            "tweet.fields": "text,geo,lang",
+            "tweet.fields": "text,geo,lang,public_metrics",
             "expansions": "author_id,geo.place_id",
             "user.fields": "location",
             "place.fields": "contained_within,country,country_code,full_name,geo,id,name,place_type",
@@ -109,3 +115,51 @@ class TwitterScraper:
                 break
 
         return data
+
+    def get_tweets_by_ids(self, tweet_ids):
+        max_per_call = 100
+
+        data = {}
+        chunks = list(get_chunks(tweet_ids, max_per_call))
+        no_of_chunks = len(chunks)
+
+        print("Pulling tweet data...")
+        for index, tweet_id_chunk in enumerate(chunks):
+            print("Call: {}/{}".format(index + 1, no_of_chunks))
+            new_data = self._get_tweets_by_id(",".join(tweet_id_chunk))
+
+            if "errors" in new_data:
+                del new_data["errors"]
+            data = merge_dicts(data, new_data)
+        print("Finished pulling tweets!")
+
+        print("Parsing tweet data...")
+        # Tweets in "data", user data in "includes": "users", place data in "includes": "places"
+
+        tweets = data["data"]
+        users = data["includes"]["users"]
+        places = data["includes"]["places"]
+
+        # Add user information to each tweet:
+        for user in users:
+            for tweet in tweets:
+                if "author_id" in tweet and user["id"] == tweet["author_id"]:
+                    if "name" in user:
+                        tweet["author_name"] = user["name"]
+                    if "username" in user:
+                        tweet["author_username"] = user["username"]
+                    if "location" in user:
+                        tweet["author_location"] = user["location"]
+
+        # Add place information to each tweet:
+        for place in places:
+            for tweet in tweets:
+                if (
+                    "geo" in tweet
+                    and "place_id" in tweet["geo"]
+                    and place["id"] == tweet["geo"]["place_id"]
+                ):
+                    if "full_name" in place:
+                        tweet["geo"]["full_name"] = place["full_name"]
+
+        return pd.json_normalize(tweets)
