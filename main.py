@@ -1,6 +1,7 @@
 import json
 import random
 import pandas as pd
+import pycountry
 
 # from core.twitter_scraper import TwitterScraper
 from core.sentiment_analysis import create_emotions, create_bias, create_cleaned, create_geo
@@ -64,6 +65,18 @@ def read_final_df(filepath):
 
     return df
 
+def normaliseCC(row):
+    code = row['country_code']
+    if code:
+        iso3 = pycountry.countries.get(alpha_2=code)
+        if iso3:
+            return iso3.alpha_3
+        else:
+            return code
+    else:
+        return None
+
+
 
 def main():
     raw_dataset_filepath = "./datasets/full_dataset_clean.csv"
@@ -75,9 +88,12 @@ def main():
     # create_tweet_df(raw_df_filepath, tweet_df_filepath)
     # process_final_df(tweet_df_filepath, final_output_df_filepath)
     df = read_final_df(final_output_df_filepath)
+        
+    df['iso_code'] = df.apply(lambda row : normaliseCC(row), axis=1) #normalise country codes to standard iso where exists
+
     print(df.iloc[0])
 
-    print(df.shape)
+    print(df.head())
 
 
 if __name__ == "__main__":
