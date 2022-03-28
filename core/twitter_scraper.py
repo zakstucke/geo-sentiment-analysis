@@ -52,7 +52,7 @@ class TwitterScraper:
     def _get_tweets_by_id(self, ids):
         params = {
             "ids": ids,
-            "tweet.fields": "text,geo,lang,public_metrics",
+            "tweet.fields": "text,geo,lang,public_metrics,created_at",
             "expansions": "author_id,geo.place_id",
             "user.fields": "location",
             "place.fields": "contained_within,country,country_code,full_name,geo,id,name,place_type",

@@ -11,8 +11,8 @@ import json
 #                       hashtags,source,is_retweet
 
 # import with only certain columns
-def CSVTweetReader():
-    df = pd.read_csv("covidvaccine.csv", usecols=["user_location", "date", "text"])
+def CSVTweetReader(columns):
+    df = pd.read_csv("covidvaccine.csv", usecols=[columns])
     return df
 
 

@@ -76,6 +76,7 @@ def main():
     # process_final_df(tweet_df_filepath, final_output_df_filepath)
     df = read_final_df(final_output_df_filepath)
     print(df.iloc[0])
+
     print(df.shape)
 
 

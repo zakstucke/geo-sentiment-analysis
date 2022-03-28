@@ -9,7 +9,7 @@ import geopy.geocoders as geocoders
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nrclex import NRCLex
 
-from cleaner import stripFillerWords
+from core.cleaner import stripFillerWords
 
 nltk.download("punkt")
 nltk.download("vader_lexicon")
