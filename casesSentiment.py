@@ -1,41 +1,45 @@
-#IMPORT DEATHS AND CASES FROM WHO DATASET
-#FETCH TWEETS 
 #HYPOTHESIS: People's sentiment in tweets has become increasingly mild as a reaction to rises/falls in cases/deaths over the past two years
 #Country Basis plot the days case level alongside average sentiment per day/week/month
-
-
-#GET NEW_CASES COL FROM WHO CSV
-
-#FROM TWEET SELECTION IN A COUNTRY GET AVERAGE SENTIMENT VALUES
-
-#PLOTTER()
 
 from main import read_final_df
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
-#parse_raw_csv("/data/WHO_covid_data_by_country.csv", "processed_data/WHO_country_df.json")
+import pycountry
 
 WHOfile = "data/WHO_covid_data_by_COUNTRY.csv"
-#data/WHO_covid_data_by_COUNTRY.csv
+
 
 WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases"])
 
 #print(WHOdf.head())
-
-#CLEAN DATA AS LOTS OF NANs
-
-
 #covid sentiment scores by country with dates
 with open("./processed_data/final_df.json", "r") as file:
     COVIDdf = pd.read_json(json.load(file))
 
-#COVIDdf = read_final_df("./processed_data/final_df.json")
+#removes rows where country code is nan
+df = COVIDdf[COVIDdf["country_code"].notna()]
 
-#print(COVIDdf.head())
-#cols in COVID df = data, 
+#lookup iso-3 country code
+def normaliseCC(row):
+    code = row['country_code']
+    iso3 = pycountry.countries.get(alpha_2=code)
+    if iso3:
+        return iso3.alpha_3
+    else:
+        return code
+    
+#creates new column with iso-3 code
+df['iso_code'] = df.apply(lambda row : normaliseCC(row), axis=1) #normalise country codes to standard iso where exists
 
-#print(COVIDdf)
+
+#keeps just iso, sentiment and future date
+def reduceCOVIDdf(df):
+    return df[['iso_code', 'compound']].copy()
+
+COVIDdf = reduceCOVIDdf(df)
+
+print(COVIDdf.head(20))
 
 #matplot
 
@@ -83,9 +87,10 @@ def plot(WHOdf, iso_code):
     #print(y)
     #plt.plot(x, y)
     #plt.show()
-    
+
+ 
 
 #print(groupDFByMonth("iso_code", "GBR", WHOdf))
-plot(WHOdf, "GBR")   
+#plot(WHOdf, "GBR")   
 
 
