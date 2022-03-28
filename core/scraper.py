@@ -1,5 +1,5 @@
 import pandas as pd
-from core.twitter_scraper import TwitterScraper
+from twitter_scraper import TwitterScraper
 import json
 
 # whole dataset -> pandas frame
@@ -23,4 +23,7 @@ def fetchTweet(ids):
     scraper = TwitterScraper()
     resObj = scraper._get_tweets_by_id(ids)
     df = pd.json_normalize(resObj, record_path=["data"])
+    print(df)
     return df
+
+fetchTweet(["1261326399320715264,1278347468690915330"])
