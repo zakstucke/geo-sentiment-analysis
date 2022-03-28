@@ -1,12 +1,15 @@
 import json
 import random
+import datetime
 import pandas as pd
+import numpy as np
 import pycountry
 
 # from core.twitter_scraper import TwitterScraper
 from core.sentiment_analysis import create_emotions, create_bias, create_cleaned, create_geo
 from core.twitter_scraper import TwitterScraper
-#from core.scraper import fetchTweet
+
+# from core.scraper import fetchTweet
 
 pd.set_option("display.max_rows", 50)
 pd.set_option("display.max_columns", 50)
@@ -26,6 +29,18 @@ def parse_raw_csv(filepath, save_filepath, subset=None):
     else:
         df = pd.read_csv(filepath)
 
+    # Combine the date and time fields into a datetime field:
+    df["datetime"] = np.nan
+
+    def create_datetime(row):
+        row["datetime"] = datetime.datetime.combine(
+            row["date"].to_pydatetime().date(),
+            datetime.datetime.strptime(row["time"], "%H:%M:%S").time(),
+        )
+        return row
+
+    df = df.apply(create_datetime, axis=1)
+
     with open(save_filepath, "w") as file:
         json.dump(df.to_json(), file)
 
@@ -39,6 +54,11 @@ def create_tweet_df(raw_df_filepath, output_filepath):
     tweets_ids = raw_df["tweet_id"].astype("string").values.tolist()
     # Scrape all the tweet ids:
     df = TwitterScraper().get_tweets_by_ids(tweets_ids)
+
+    # Add in the original fields:
+    df = pd.merge(df, raw_df, how="left", left_on="id", right_on="tweet_id")
+
+    # Merge it in with the original tweet datetime info:
 
     with open(output_filepath, "w") as file:
         json.dump(df.to_json(), file)
@@ -65,8 +85,9 @@ def read_final_df(filepath):
 
     return df
 
+
 def normaliseCC(row):
-    code = row['country_code']
+    code = row["country_code"]
     if code:
         iso3 = pycountry.countries.get(alpha_2=code)
         if iso3:
@@ -75,7 +96,6 @@ def normaliseCC(row):
             return code
     else:
         return None
-
 
 
 def main():
@@ -88,8 +108,10 @@ def main():
     # create_tweet_df(raw_df_filepath, tweet_df_filepath)
     # process_final_df(tweet_df_filepath, final_output_df_filepath)
     df = read_final_df(final_output_df_filepath)
-        
-    df['iso_code'] = df.apply(lambda row : normaliseCC(row), axis=1) #normalise country codes to standard iso where exists
+
+    df["iso_code"] = df.apply(
+        lambda row: normaliseCC(row), axis=1
+    )  # normalise country codes to standard iso where exists
 
     print(df.iloc[0])
 
