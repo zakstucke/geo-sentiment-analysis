@@ -5,7 +5,7 @@ import pandas as pd
 # from core.twitter_scraper import TwitterScraper
 from core.sentiment_analysis import create_emotions, create_bias, create_cleaned, create_geo
 from core.twitter_scraper import TwitterScraper
-from core.scraper import fetchTweet
+#from core.scraper import fetchTweet
 
 pd.set_option("display.max_rows", 50)
 pd.set_option("display.max_columns", 50)
