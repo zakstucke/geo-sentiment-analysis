@@ -6,7 +6,7 @@ import json
 import matplotlib.pyplot as plt
 import pycountry
 
-pd.options.mode.chained_assignment = None  # default='warn'
+pd.options.mode.chained_assignment = None  # default='warn' this is needed for false positives warnings on reassigning pd dataframe
 
 #CASES DATA FROM CSV
 WHOfile = "data/WHO_covid_data_by_COUNTRY.csv"
