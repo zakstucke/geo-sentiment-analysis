@@ -30,7 +30,7 @@ def dfTextToString(df):
 
 strText = dfTextToString(COVIDdf)
 
-wc = WordCloud(stopwords=None).generate(strText)
+wc = WordCloud(stopwords=None, min_word_length=4).generate(strText)
 plt.figure()
 plt.imshow(wc, interpolation='bilinear')
 plt.axis('off')
