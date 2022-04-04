@@ -31,9 +31,7 @@ def getText(data):  # Used for original Main data scraped by TwitterScraper
     return allText
 
 
-def stripFillerWords(
-    words,
-):  # Takes a list of words as input and returns list with filler/stop words removed
+def stripFillerWords(words):  # Takes a list of words as input and returns list with filler/stop words removed
 
     # Remove normal filler words (so, was etc):
     result = [word for word in words if word not in nlp.Defaults.stop_words]

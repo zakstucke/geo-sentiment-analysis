@@ -15,7 +15,8 @@ WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases"])
 #TWEET DATA FROM PREPROCESSED DF
 with open("./processed_data/final_df.json", "r") as file:
     COVIDdf = pd.read_json(json.load(file))
-
+    
+#print(COVIDdf.head(20))
 #lookup iso-3 country code
 def normaliseCC(row):
     code = row['country_code']
@@ -42,6 +43,7 @@ def groupDFByMonth(iso_col_name, code, df):
 def plot(WHOdf, COVIDdf, iso_code):
     whoiso = groupDFByMonth("iso_code", iso_code, WHOdf)
     covidiso = groupDFByMonth("iso_code", iso_code, COVIDdf)
+    
     title = iso_code + " Avg Daily New Cases By Month over Covid with Average Sentiment of Tweets Regarding COVID"
     whoiso.join(covidiso)
     df = pd.merge(whoiso, covidiso, left_index=True, right_index=True)
@@ -65,7 +67,7 @@ def plot(WHOdf, COVIDdf, iso_code):
 COVIDdf = cleanTweetDF(COVIDdf)
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-plot(WHOdf, COVIDdf, "GBR")
+plot(WHOdf, COVIDdf, "RUS")
 plot(WHOdf, COVIDdf, "USA")
 plot(WHOdf, COVIDdf, "DEU") 
 plot(WHOdf, COVIDdf, "CAN") 
