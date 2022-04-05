@@ -61,15 +61,16 @@ def plot(WHOdf, COVIDdf, iso_code):
     ax2.plot(df.date, df.compound, color='blue')
     ax2.set_ylabel("Average Sentiment", color='blue')
 
-    #Generate test statistic
+    #Conduct hypothesis test at 5% significance level
     p, corr, result = hypothesisTest(df.new_cases, df.compound, 0.05)
     plt.text(min(df.date),max(df.compound),"Correlation: " + str(corr), fontsize=13)
+
     plt.show()
 
 def hypothesisTest(x, y, alpha):
     likelyDependent = False
     corr, p = pearsonr(x, y)
-    print('Correlation=%.3f, p=%.3f' % (corr, p))
+    #print('Correlation=%.3f, p=%.3f' % (corr, p))
     if p < alpha:
 	       likelyDependent = True
     return p, corr, likelyDependent
