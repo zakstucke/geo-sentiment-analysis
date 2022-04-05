@@ -6,7 +6,7 @@ import numpy as np
 import pycountry
 
 # from core.twitter_scraper import TwitterScraper
-from core.sentiment_analysis import create_emotions, create_bias, create_cleaned, create_geo
+from core.sentiment_analysis import create_df, analyze_bias, analyze_emotions, create_cleaned, create_geo
 from core.twitter_scraper import TwitterScraper
 
 # from core.scraper import fetchTweet
@@ -68,9 +68,19 @@ def process_final_df(tweet_df_filename, save_filepath):
     with open(tweet_df_filename, "r") as file:
         df = pd.read_json(json.load(file))
 
+    #restructured using no nest functions etc but left old incase anyones wants to revert
+    #df = create_cleaned(df, "text")
+    #df = create_bias(df, "text")
+    #df = create_emotions(df, "text")
+    #df = create_geo(df, "author_location") 
+
+    emotions = ["emotion_1", "emotion_2", "emotion_3"]
+    fields = ["pos", "neg", "neu", "compound"]
+
     df = create_cleaned(df, "text")
-    df = create_bias(df, "text")
-    df = create_emotions(df, "text")
+    df = create_df(df, emotions+fields)
+    df = df.apply(lambda row: analyze_emotions(row, "text", emotions), axis=1)
+    df = df.apply(lambda row: analyze_bias(row, "text", fields), axis=1)
     df = create_geo(df, "author_location")
 
     with open(save_filepath, "w") as file:

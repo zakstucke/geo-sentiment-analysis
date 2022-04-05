@@ -89,53 +89,78 @@ rate_limit = 1  # Time to async sleep for each source after a call
 num_geolocator_agents = len(geo_funcs)
 
 
-def create_emotions(df, text_column_name):
-    emotions = ["emotion_1", "emotion_2", "emotion_3"]
+# def create_emotions(df, text_column_name):
+#     emotions = ["emotion_1", "emotion_2", "emotion_3"]
 
-    # Add in the new emotion columns:
-    for emotion in emotions:
-        df[emotion] = np.nan
+#     # Add in the new emotion columns:
+#     for emotion in emotions:
+#         df[emotion] = np.nan
 
-    def analyze_emotions(row):
-        # Analyse and add the emotions of the row:
-        analyzer = NRCLex(text=row[text_column_name])
-        for index, emotion in enumerate(emotions):
-            # If not enough emotions in the list, leave column as NaN:
-            if len(analyzer.top_emotions) <= index:
-                break
-            row[emotion] = analyzer.top_emotions[index]
+#     def analyze_emotions(row):
+#         # Analyse and add the emotions of the row:
+#         analyzer = NRCLex(text=row[text_column_name])
+#         for index, emotion in enumerate(emotions):
+#             # If not enough emotions in the list, leave column as NaN:
+#             if len(analyzer.top_emotions) <= index:
+#                 break
+#             row[emotion] = analyzer.top_emotions[index]
 
-        return row
+#         return row
 
-    df = df.apply(analyze_emotions, axis=1)
+#     df = df.apply(analyze_emotions, axis=1)
 
+#     return df
+
+
+# def create_bias(df, text_column_name):
+#     # Uses nltk vader to calc positive, negative, neutrality and compound columns
+
+#     fields = ["pos", "neg", "neu", "compound"]
+
+#     # Setup the new columns:
+#     for field in fields:
+#         df[field] = np.nan
+
+#     sia = SentimentIntensityAnalyzer()
+
+#     def analyze_bias(row):
+#         nonlocal sia
+
+#         results = sia.polarity_scores(row[text_column_name])
+
+#         for field in fields:
+#             row[field] = results[field]
+
+#         return row
+
+#     df = df.apply(analyze_bias, axis=1)
+
+#    return df
+
+
+
+#Removed nested functions add repeated code etc..
+def create_df(df, column_headers):
+    for column in column_headers:
+        df[column] = np.nan
     return df
 
+def analyze_emotions(row, text_col, emotions):
+    analyzer = NRCLex(text=row[text_col])
+    for index, emotion in enumerate(emotions):
+        # If not enough emotions in the list, leave column as NaN:
+        if len(analyzer.top_emotions) <= index:
+            break
+        row[emotion] = analyzer.top_emotions[index]
+    return row
 
-def create_bias(df, text_column_name):
-    # Uses nltk vader to calc positive, negative, neutrality and compound columns
-
-    fields = ["pos", "neg", "neu", "compound"]
-
-    # Setup the new columns:
-    for field in fields:
-        df[field] = np.nan
-
+def analyze_bias(row, text_col, fields):
     sia = SentimentIntensityAnalyzer()
-
-    def analyze_bias(row):
-        nonlocal sia
-
-        results = sia.polarity_scores(row[text_column_name])
-
-        for field in fields:
-            row[field] = results[field]
-
-        return row
-
-    df = df.apply(analyze_bias, axis=1)
-
-    return df
+    #nonlocal sia
+    results = sia.polarity_scores(row[text_col])
+    for field in fields:
+        row[field] = results[field]
+    return row
 
 
 def create_cleaned(df, text_column_name):
