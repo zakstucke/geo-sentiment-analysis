@@ -1,7 +1,8 @@
 import spacy
+from spacy_langdetect import LanguageDetector
 
 nlp = spacy.load("en_core_web_sm")
-
+nlp.add_pipe(LanguageDetector(), name = "language_detector", last=True)
 
 def getSingleTweet(data):  # Used for original Main data scraped by TwitterScraper
     # Dictionary has 2 keys
@@ -32,8 +33,14 @@ def getText(data):  # Used for original Main data scraped by TwitterScraper
 
 
 def stripFillerWords(words):  # Takes a list of words as input and returns list with filler/stop words removed
+    doc = nlp(" ".join(words))
+    result = ""
+    if ((doc._.language["language"]) == "en"):
 
-    # Remove normal filler words (so, was etc):
-    result = [word for word in words if word not in nlp.Defaults.stop_words]
+        # Remove normal filler words (so, was etc):
+        result = [word for word in words if word not in nlp.Defaults.stop_words]
+
+    #print("English word: " + next(iter(englishWords)))
+    #print(word + " is English? " + nlp.vocab.strings[word])
 
     return result
