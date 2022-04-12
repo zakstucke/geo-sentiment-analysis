@@ -11,13 +11,14 @@ pd.options.mode.chained_assignment = None  # default='warn' this is needed for f
 
 #CASES DATA FROM CSV
 WHOfile = "data/WHO_covid_data_by_COUNTRY.csv"
-WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases"])
-
+WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases", "total_vaccinations"])
+# WHOVaccinedf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "total_vaccinations"])
 #TWEET DATA FROM PREPROCESSED DF
 with open("./processed_data/final_df.json", "r") as file:
     COVIDdf = pd.read_json(json.load(file))
 
-#print(COVIDdf.head(20))
+# justvaccines = WHOdf[WHOdf['total_vaccinations']].notna()
+# print(justvaccines.head)
 #lookup iso-3 country code
 def normaliseCC(row):
     code = row['country_code']
@@ -28,7 +29,7 @@ def normaliseCC(row):
         return code
 
 def cleanTweetDF(df):
-    df = COVIDdf[COVIDdf["country_code"].notna()]
+    df = df[df["country_code"].notna()]
     df = df[df["date"].notna()]
     df['iso_code'] = df.apply(lambda row : normaliseCC(row), axis=1) #normalise country codes to standard iso where exists
     return df[['iso_code', 'compound', 'date']].copy()
@@ -41,7 +42,7 @@ def groupDFByMonth(iso_col_name, code, df):
     df = df.set_index('date')
     return df.groupby(pd.Grouper(freq='M')).mean()
 
-def plot(WHOdf, COVIDdf, iso_code):
+def plot(WHOdf, COVIDdf, iso_code, vaccine=False):
     whoiso = groupDFByMonth("iso_code", iso_code, WHOdf)
     covidiso = groupDFByMonth("iso_code", iso_code, COVIDdf)
 
@@ -51,6 +52,13 @@ def plot(WHOdf, COVIDdf, iso_code):
     df = df.reset_index()
 
     fig, ax = plt.subplots(figsize=(10,5))
+
+    if vaccine:
+        print('vaccines', df.total_vaccinations)
+        ax.plot(df.date, df.total_vaccinations, color='red')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Total Vaccines", color="red")
+        ax.set_title(title)
 
     ax.plot(df.date, df.new_cases, color='red')
     ax.set_xlabel("Date")
@@ -72,14 +80,15 @@ def hypothesisTest(x, y, alpha):
     corr, p = pearsonr(x, y)
     #print('Correlation=%.3f, p=%.3f' % (corr, p))
     if p < alpha:
-	       likelyDependent = True
+	    likelyDependent = True
     return p, corr, likelyDependent
 
 
 COVIDdf = cleanTweetDF(COVIDdf)
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-plot(WHOdf, COVIDdf, "RUS")
-plot(WHOdf, COVIDdf, "USA")
 plot(WHOdf, COVIDdf, "DEU")
-plot(WHOdf, COVIDdf, "CAN")
+# plot(WHOdf, COVIDdf, "RUS")
+# plot(WHOdf, COVIDdf, "USA")
+# plot(WHOdf, COVIDdf, "DEU")
+# plot(WHOdf, COVIDdf, "CAN")
