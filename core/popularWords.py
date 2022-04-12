@@ -1,7 +1,9 @@
 from collections import Counter
+import black
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
+from pyparsing import Word
 from cleaner import stripFillerWords
 from sentiment_analysis import create_cleaned
 
@@ -17,6 +19,10 @@ def getPopularWords(df, amountNeeded):#Input a list of strings and amount of pop
 
 
 from wordcloud import WordCloud
+from wordcloud import ImageColorGenerator
+from PIL import Image
+import numpy as np
+
 with open("./processed_data/final_df.json", "r") as file:
     COVIDdf = pd.read_json(json.load(file))
 
@@ -30,7 +36,9 @@ def dfTextToString(df):
 
 strText = dfTextToString(COVIDdf)
 
-wc = WordCloud(stopwords=None,min_word_length=2).generate(strText)
+covidImage = np.array(Image.open("./images/covidMask.jpg"))
+
+wc = WordCloud(stopwords=None,min_word_length=2,mask=covidImage).generate(strText)
 plt.figure()
 plt.imshow(wc, interpolation='bilinear')
 plt.axis('off')
