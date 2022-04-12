@@ -15,7 +15,7 @@ topics = {'hypercapnia':0,
 'French Pasteur Institute':0,
 'authorized euthanasia':0,
 'Dr. Anthony Fauci':0,
- 'fauci':0,
+'fauci':0,
 'alter human DNA':0,
 'microchip surveillance technology':0,
 'microchip':0,
@@ -38,11 +38,11 @@ topics = {'hypercapnia':0,
 "Lemon and hot water":0
 }
 
-
-
 for tweet in COVIDdf['text']:
     for topic in topics:
         if topic.lower() in tweet.lower():
             count = topics[topic]+1
             topics.update({topic: count})
-print(topics)
+
+
+print({topic: value for topic, value in sorted(topics.items(), key=lambda item: item[1], reverse=True)})
