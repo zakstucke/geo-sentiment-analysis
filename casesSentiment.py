@@ -5,6 +5,7 @@ import pandas as pd
 import json
 import matplotlib.pyplot as plt
 import pycountry
+import datetime
 from scipy.stats import pearsonr
 
 pd.options.mode.chained_assignment = None  # default='warn' this is needed for false positives warnings on reassigning pd dataframe
@@ -87,7 +88,26 @@ def hypothesisTest(x, y, alpha):
 COVIDdf = cleanTweetDF(COVIDdf)
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-plot(WHOdf, COVIDdf, "DEU")
+plot(WHOdf, COVIDdf, "GBR")
+
+def lockdownUK():
+    df = groupDFByMonth("iso_code", "GBR", COVIDdf)
+    df = df.reset_index()
+    title = " UK Average Sentiment of Tweets Regarding COVID with lockdown information"
+    fig, ax = plt.subplots(figsize=(10,5))
+    ax.plot(df.date, df.compound, color='blue')
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Average Sentiment", color='blue')
+    ax.set_title(title)
+    lockdownStart = datetime.datetime(2020, 3, 12)
+    start = plt.axvline(x=lockdownStart, color='red')
+    lockdownEase = datetime.datetime(2020, 6, 1)
+    ease = plt.axvline(x=lockdownEase, color='green')
+    ax.legend([start,ease],['Start of Lockdown 1', 'Lockdown Measures Ease'])
+    plt.show()
+
+lockdownUK()
+
 # plot(WHOdf, COVIDdf, "RUS")
 # plot(WHOdf, COVIDdf, "USA")
 # plot(WHOdf, COVIDdf, "DEU")
