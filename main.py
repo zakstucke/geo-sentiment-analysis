@@ -1,87 +1,146 @@
+import os
 import json
-import random
-import datetime
+import time
 import pandas as pd
 import numpy as np
 import pycountry
+import linecache
 
 # from core.twitter_scraper import TwitterScraper
-from core.sentiment_analysis import create_df, analyze_bias, analyze_emotions, create_cleaned, create_geo
+from core.sentiment_analysis import (
+    create_df,
+    analyze_bias,
+    analyze_emotions,
+    clean_row_text,
+    apply_geo,
+)
 from core.twitter_scraper import TwitterScraper
 
-# from core.scraper import fetchTweet
 
+# from core.scraper import fetchTweet
 pd.set_option("display.max_rows", 50)
 pd.set_option("display.max_columns", 50)
 
 
-def parse_raw_csv(filepath, save_filepath, subset=None):
-    assert subset is None or type(subset) == int, subset
+def extract_csv_subset(save_filepath, subset_size, file_subset=None):
+    print("Extracting subset size of: {} from raw csv...".format(subset_size))
 
-    if subset:
-        # Getting a random subset of the dataset for quick processing:
-        n = sum(1 for line in open(filepath)) - 1  # number of records in file (excludes header)
-        s = subset  # desired sample size
-        skip = sorted(
-            random.sample(range(1, n + 1), n - s)
-        )  # the 0-indexed header will not be included in the skip list
-        df = pd.read_csv(filepath, skiprows=skip)
-    else:
-        df = pd.read_csv(filepath)
+    # Have split the datasets into small chunks to help with memory issues:
+    basepath = os.path.join(".", "datasets", "chunks")
 
-    # Combine the date and time fields into a datetime field:
-    df["datetime"] = np.nan
+    files = [f for f in os.listdir(basepath) if os.path.isfile(os.path.join(basepath, f))]
+    if file_subset:
+        files = files[:file_subset]
+    total_files = len(files)
 
-    def create_datetime(row):
-        row["datetime"] = datetime.datetime.combine(
-            row["date"].to_pydatetime().date(),
-            datetime.datetime.strptime(row["time"], "%H:%M:%S").time(),
-        )
-        return row
+    # First get the total number of rows
+    start_index = 0
+    total_rows = 0
+    files_info = []
+    for index, filename in enumerate(files):
+        with open(os.path.join(basepath, filename), "r") as file:
+            count = sum(1 for _ in file)
+            count -= 1  # For the header of the csv
+            files_info.append(
+                {
+                    "name": filename,
+                    "total_rows": count,
+                    "start_index": start_index,
+                    "end_index": start_index + count,
+                    "indexes": [],
+                }
+            )
+            start_index += count
 
-    df = df.apply(create_datetime, axis=1)
+        print("{}/{} files processed.".format(index + 1, total_files))
 
+    total_rows = sum(file_info["total_rows"] for file_info in files_info)
+    indexes = [int(val) for val in np.linspace(0, total_rows - 1, num=subset_size)]
+
+    # Assign the indexes to each group:
+    current_file_index = 0
+    for index in indexes:
+        assert files_info[current_file_index]["start_index"] <= index
+        while files_info[current_file_index]["end_index"] <= index:
+            current_file_index += 1
+        files_info[current_file_index]["indexes"].append(index)
+
+    completed = 0
     with open(save_filepath, "w") as file:
-        json.dump(df.to_json(), file)
+        file.write("tweet_id,date,time,lang,country_place\n")
+
+    for file_info in files_info:
+        path = os.path.join(basepath, file_info["name"])
+        offset = file_info["start_index"]
+        with open(save_filepath, "a") as file:  # Appending
+            for index in file_info["indexes"]:
+                file.write(
+                    linecache.getline(path, index + 2 - offset)
+                )  # +2 as one for index to line, one for skipping header row
+                completed += 1
+        linecache.clearcache()
+        print("{}/{} rows parsed.".format(completed, subset_size))
 
     return True
 
 
-def create_tweet_df(raw_df_filepath, output_filepath):
-    with open(raw_df_filepath, "r") as file:
-        raw_df = pd.read_json(json.load(file))
+def create_tweet_csv(raw_csv_subset, tweet_csv_filepath):
+    with open(raw_csv_subset, "r") as file:
+        raw_df = pd.read_csv(file)
 
-    tweets_ids = raw_df["tweet_id"].astype("string").values.tolist()
-    # Scrape all the tweet ids:
-    df = TwitterScraper().get_tweets_by_ids(tweets_ids)
+    tweets_ids = raw_df["tweet_id"].astype("string").values
 
-    # Add in the original fields:
-    df = pd.merge(df, raw_df, how="left", left_on="id", right_on="tweet_id")
-
-    # Merge it in with the original tweet datetime info:
-
-    with open(output_filepath, "w") as file:
-        json.dump(df.to_json(), file)
+    # Scrape all the tweets and save to csv: (handles crashes and continuations)
+    TwitterScraper().get_tweets_by_ids(tweets_ids, tweet_csv_filepath)
 
 
-def process_final_df(tweet_df_filename, save_filepath):
-    with open(tweet_df_filename, "r") as file:
-        df = pd.read_json(json.load(file))
+def process_final_df(tweet_csv_filename, save_filepath):
+    with open(tweet_csv_filename, "r") as file:
+        df = pd.read_csv(file, low_memory=False)
 
-    #restructured using no nest functions etc but left old incase anyones wants to revert
-    #df = create_cleaned(df, "text")
-    #df = create_bias(df, "text")
-    #df = create_emotions(df, "text")
-    #df = create_geo(df, "author_location") 
+    cleaned_text_fields = ["cleaned_words"]
+    emotion_fields = ["emotion_1", "emotion_2", "emotion_3"]
+    sentiment_fields = ["pos", "neg", "neu", "compound"]
+    geo_fields = ["iso_code", "country", "city", "lat", "lng"]
 
-    emotions = ["emotion_1", "emotion_2", "emotion_3"]
-    fields = ["pos", "neg", "neu", "compound"]
+    # Adding in the new columns set to nan:
+    df = create_df(df, emotion_fields + sentiment_fields + cleaned_text_fields + geo_fields)
 
-    df = create_cleaned(df, "text")
-    df = create_df(df, emotions+fields)
-    df = df.apply(lambda row: analyze_emotions(row, "text", emotions), axis=1)
-    df = df.apply(lambda row: analyze_bias(row, "text", fields), axis=1)
-    df = create_geo(df, "author_location")
+    index = 0
+    average_secs = 0
+    total_rows = df.shape[0]
+
+    def apply_all(row):
+        nonlocal index
+        nonlocal total_rows
+        nonlocal average_secs
+
+        before = time.time()
+
+        row = clean_row_text(row)
+        row = analyze_emotions(row, "text", emotion_fields)
+        row = analyze_bias(row, "text", sentiment_fields)
+        row = apply_geo(row)
+
+        index += 1
+        time_taken = time.time() - before
+        average_secs = average_secs + ((time_taken - average_secs) / index)
+
+        if index % 100 == 0:
+            seconds_remaining = average_secs * (total_rows - index)
+            print(
+                "Rows processed: {}/{}. Estimated minutes remaining: {:0.2f}".format(
+                    index, total_rows, seconds_remaining / 60
+                )
+            )
+
+        return row
+
+    print("Rows to process: {}".format(df.shape[0]))
+    df = df.apply(apply_all, axis=1)
+
+    # Make sure all Nones are Nans:
+    df = df.fillna(value=np.nan)
 
     with open(save_filepath, "w") as file:
         json.dump(df.to_json(), file)
@@ -91,7 +150,7 @@ def process_final_df(tweet_df_filename, save_filepath):
 
 def read_final_df(filepath):
     with open(filepath, "r") as file:
-        df = pd.read_json(json.load(file))
+        df = pd.read_csv(file)
 
     return df
 
@@ -109,23 +168,20 @@ def normaliseCC(row):
 
 
 def main():
-    raw_dataset_filepath = "./datasets/full_dataset_clean.csv"
-    raw_df_filepath = "./processed_data/raw_df.json"
-    tweet_df_filepath = "./processed_data/tweet_df.json"
-    final_output_df_filepath = "./processed_data/final_df.json"
+    raw_csv_subset_filepath = "./intermediary_non_commit_data/raw_csv_subset.txt"
+    tweet_csv_filepath = "./intermediary_non_commit_data/tweet_csv.txt"
+    final_output_csv_path = "./processed_data/final_csv.txt"
+    subset_size = 1000000  # 1 million, will then drop after only including ones with addresses etc
 
-    # parse_raw_csv(raw_dataset_filepath, raw_df_filepath, subset=10000)
-    # create_tweet_df(raw_df_filepath, tweet_df_filepath)
-    # process_final_df(tweet_df_filepath, final_output_df_filepath)
-    df = read_final_df(final_output_df_filepath)
+    # extract_csv_subset(raw_csv_subset_filepath, subset_size)
+    # create_tweet_csv(raw_csv_subset_filepath, tweet_csv_filepath)
+    # process_final_df(tweet_csv_filepath, final_output_csv_path)
+    df = read_final_df(final_output_csv_path)
 
-    df["iso_code"] = df.apply(
-        lambda row: normaliseCC(row), axis=1
-    )  # normalise country codes to standard iso where exists
-
-    print(df.iloc[0])
-
-    print(df.head())
+    print(df.describe())
+    print(df.shape)
+    for x in range(10):
+        print(df.iloc[x])
 
 
 if __name__ == "__main__":
