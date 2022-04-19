@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pycountry
 import datetime
 from scipy.stats import pearsonr
+import numpy as np
 
 pd.options.mode.chained_assignment = None  # default='warn' this is needed for false positives warnings on reassigning pd dataframe
 
@@ -103,7 +104,7 @@ def lockdownUK():
     df = groupDFByMonth("iso_code", "GBR", COVIDdf)
     df = df.reset_index()
     title = " UK Average Sentiment of Tweets Regarding COVID with lockdown information"
-    fig, ax = plt.subplots(figsize=(10,5))
+    fig, ax = plt.subplots(figsize=(12,10))
     ax.plot(df.date, df.compound, color='blue')
     ax.set_xlabel("Date")
     ax.set_ylabel("Average Sentiment", color='blue')
@@ -120,13 +121,14 @@ def lockdownUK():
                 "COVID Passes Needed":"2021, 12, 15",
                 "Covid Rules Scrapped":"2022, 02, 24"
                 }
-    dates = [datetime.datetime.strptime(date, '%Y, %m, %d') for title, date in keydates.items()]
-
-    for date in dates:
-        plt.axvline(x=date)
-    ax.legend(keydates.keys())
+    keydates = {title:datetime.datetime.strptime(date, '%Y, %m, %d') for title, date in keydates.items()}
+    lines = []
+    colors = plt.get_cmap('tab20').colors
+    i = 0
+    for title, date in keydates.items():
+        lines.append(plt.axvline(x=date, color = colors[i]))
+        i+=1
+    ax.legend(lines, keydates.keys(), loc='lower right')
     plt.show()
 
 lockdownUK()
-
-
