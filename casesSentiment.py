@@ -93,11 +93,11 @@ def hypothesisTest(x, y, alpha):
 COVIDdf = pd.read_csv('cleanedForCaseSentiment.csv')
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-plot(WHOdf, COVIDdf, "GBR")
-plot(WHOdf, COVIDdf, "RUS")
-plot(WHOdf, COVIDdf, "USA")
-plot(WHOdf, COVIDdf, "DEU")
-plot(WHOdf, COVIDdf, "CAN")
+# plot(WHOdf, COVIDdf, "GBR")
+# plot(WHOdf, COVIDdf, "RUS")
+# plot(WHOdf, COVIDdf, "USA")
+# plot(WHOdf, COVIDdf, "DEU")
+# plot(WHOdf, COVIDdf, "CAN")
 
 def lockdownUK():
     df = groupDFByMonth("iso_code", "GBR", COVIDdf)
@@ -108,11 +108,23 @@ def lockdownUK():
     ax.set_xlabel("Date")
     ax.set_ylabel("Average Sentiment", color='blue')
     ax.set_title(title)
-    lockdownStart = datetime.datetime(2020, 3, 12)
-    start = plt.axvline(x=lockdownStart, color='red')
-    lockdownEase = datetime.datetime(2020, 6, 1)
-    ease = plt.axvline(x=lockdownEase, color='green')
-    ax.legend([start,ease],['Start of Lockdown 1', 'Lockdown Measures Ease'])
+    keydates = {'First Lockdown Starts':"2020, 03, 26",
+                'Pubs Reopen':"2020, 06, 04",
+                "Eat Out To Help Out": "2020, 08, 03",
+                "Rule of Six Introduced":"2020, 09, 14",
+                "Second Lockdown Starts":"2020, 11, 05",
+                "Christmas Cancelled":"2020, 12, 21",
+                "Third Lockdown":"2021, 01, 06",
+                "Schools Reopen":"2021, 03, 08",
+                "Hospitality Reopens":"2021, 04, 12",
+                "COVID Passes Needed":"2021, 12, 15",
+                "Covid Rules Scrapped":"2022, 02, 24"
+                }
+    dates = [datetime.datetime.strptime(date, '%Y, %m, %d') for title, date in keydates.items()]
+
+    for date in dates:
+        plt.axvline(x=date)
+    ax.legend(keydates.keys())
     plt.show()
 
 lockdownUK()
