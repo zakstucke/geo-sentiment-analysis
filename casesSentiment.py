@@ -15,14 +15,16 @@ WHOfile = "data/WHO_covid_data_by_COUNTRY.csv"
 WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases", "total_vaccinations"])
 # WHOVaccinedf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "total_vaccinations"])
 #TWEET DATA FROM PREPROCESSED DF
-with open("./processed_data/final_df.json", "r") as file:
-    COVIDdf = pd.read_json(json.load(file))
+# with open("./processed_data/final_df.json", "r") as file:
+#     COVIDdf = pd.read_json(json.load(file))
+COVIDdf = pd.read_csv('processed_data/final_csv.txt')
 
+COVIDdf.rename(columns={'created_at': 'date'}, inplace=True)
 # justvaccines = WHOdf[WHOdf['total_vaccinations']].notna()
 # print(justvaccines.head)
 #lookup iso-3 country code
 def normaliseCC(row):
-    code = row['country_code']
+    code = row['iso_code']
     iso3 = pycountry.countries.get(alpha_2=code)
     if iso3:
         return iso3.alpha_3
@@ -30,7 +32,7 @@ def normaliseCC(row):
         return code
 
 def cleanTweetDF(df):
-    df = df[df["country_code"].notna()]
+    df = df[df["iso_code"].notna()]
     df = df[df["date"].notna()]
     df['iso_code'] = df.apply(lambda row : normaliseCC(row), axis=1) #normalise country codes to standard iso where exists
     return df[['iso_code', 'compound', 'date']].copy()
@@ -85,10 +87,17 @@ def hypothesisTest(x, y, alpha):
     return p, corr, likelyDependent
 
 
-COVIDdf = cleanTweetDF(COVIDdf)
+# COVIDdf = cleanTweetDF(COVIDdf)
+# COVIDdf.to_csv('cleanedForCaseSentiment.csv') #saves new df as csv with normalised cc and removes nan dates to reduce loading time
+
+COVIDdf = pd.read_csv('cleanedForCaseSentiment.csv')
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
 plot(WHOdf, COVIDdf, "GBR")
+plot(WHOdf, COVIDdf, "RUS")
+plot(WHOdf, COVIDdf, "USA")
+plot(WHOdf, COVIDdf, "DEU")
+plot(WHOdf, COVIDdf, "CAN")
 
 def lockdownUK():
     df = groupDFByMonth("iso_code", "GBR", COVIDdf)
@@ -108,7 +117,4 @@ def lockdownUK():
 
 lockdownUK()
 
-# plot(WHOdf, COVIDdf, "RUS")
-# plot(WHOdf, COVIDdf, "USA")
-# plot(WHOdf, COVIDdf, "DEU")
-# plot(WHOdf, COVIDdf, "CAN")
+
