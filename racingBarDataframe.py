@@ -15,9 +15,9 @@ pd.options.mode.chained_assignment = None  # default='warn' this is needed for f
 def getPopularWords(df, amountNeeded):#Input a list of strings and amount of popular words needed, returns a list of popular words
   inOne = ""
   for message in df.text:
-    #doc = nlp(message)
-    #if doc._.language['language'] == 'en':
-    inOne += message + " "
+    doc = nlp(message)
+    if doc._.language['language'] == 'en':
+        inOne += message + " "
   justWords = inOne.split()#Splitting into words
   popularWords = Counter(justWords)
   return (popularWords.most_common(amountNeeded))#Looked into source code of counter and appears to be O(n) time complexity
@@ -68,3 +68,4 @@ Outdf.to_csv('test.csv')
 df = pd.read_csv('test.csv')
 df = df.transpose()
 print(df)
+df.to_csv('racingDF.csv')
