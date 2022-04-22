@@ -1,6 +1,7 @@
 #HYPOTHESIS: People's sentiment in tweets has become increasingly mild as a reaction to rises/falls in cases/deaths over the past two years
 #Country Basis plot the days case level alongside average sentiment per day/week/month
 
+from turtle import position
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -13,14 +14,14 @@ pd.options.mode.chained_assignment = None  # default='warn' this is needed for f
 
 #CASES DATA FROM CSV
 WHOfile = "data/WHO_covid_data_by_COUNTRY.csv"
-WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases", "total_vaccinations"])
+WHOdf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "new_cases", "new_vaccinations", "new_tests"])
 # WHOVaccinedf = pd.read_csv(WHOfile, usecols=["iso_code", "date", "total_vaccinations"])
 #TWEET DATA FROM PREPROCESSED DF
 # with open("./processed_data/final_df.json", "r") as file:
 #     COVIDdf = pd.read_json(json.load(file))
-COVIDdf = pd.read_csv('processed_data/final_csv.txt')
+#COVIDdf = pd.read_csv('processed_data/final_csv.txt')
 
-COVIDdf.rename(columns={'created_at': 'date'}, inplace=True)
+# COVIDdf.rename(columns={'created_at': 'date'}, inplace=True)
 # justvaccines = WHOdf[WHOdf['total_vaccinations']].notna()
 # print(justvaccines.head)
 #lookup iso-3 country code
@@ -46,7 +47,7 @@ def groupDFByMonth(iso_col_name, code, df):
     df = df.set_index('date')
     return df.groupby(pd.Grouper(freq='M')).mean()
 
-def plot(WHOdf, COVIDdf, iso_code, vaccine=False):
+def plot(WHOdf, COVIDdf, iso_code, vaccine=False, tests=False):
     whoiso = groupDFByMonth("iso_code", iso_code, WHOdf)
     covidiso = groupDFByMonth("iso_code", iso_code, COVIDdf)
 
@@ -57,12 +58,17 @@ def plot(WHOdf, COVIDdf, iso_code, vaccine=False):
 
     fig, ax = plt.subplots(figsize=(10,5))
 
-    if vaccine:
-        print('vaccines', df.total_vaccinations)
-        ax.plot(df.date, df.total_vaccinations, color='red')
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Total Vaccines", color="red")
-        ax.set_title(title)
+    # if vaccine:
+    #     ax.plot(df.date, df.new_vaccinations, color='green')
+    #     ax.set_xlabel("Date")
+    #     ax.set_ylabel("New Vaccines", color="green")
+    #     ax.set_title(title)
+
+    # if tests:
+    #     ax.plot(df.date, df.new_tests, color='orange')
+    #     ax.set_xlabel("Date")
+    #     ax.set_ylabel("New Tests", color="orange")
+    #     ax.set_title(title)
 
     ax.plot(df.date, df.new_cases, color='red')
     ax.set_xlabel("Date")
@@ -72,43 +78,64 @@ def plot(WHOdf, COVIDdf, iso_code, vaccine=False):
     ax2 = ax.twinx()
     ax2.plot(df.date, df.compound, color='blue')
     ax2.set_ylabel("Average Sentiment", color='blue')
-
+    plt.show()
     #Conduct hypothesis test at 5% significance level
     p, corr, result = hypothesisTest(df.new_cases, df.compound, 0.05)
-    plt.text(min(df.date),max(df.compound),"Correlation: " + str(corr), fontsize=13)
+    _, corr1, _ = hypothesisTest(df.new_vaccinations, df.compound, 0.05)
+    _, corr2, _ = hypothesisTest(df.new_tests, df.compound, 0.05)
 
-    plt.show()
+    print(corr, corr1, corr2)
+
+    #plt.text(0,0,"Cases Sentiment Correlation: " + str(corr) + "\nVax Sentiment Correlation: " + str(corr1) + "\n Tests Sentiment Correlation: " + str(corr2), fontsize=13)
+    #plt.legend()
+    
 
 def hypothesisTest(x, y, alpha):
     likelyDependent = False
+    x = x[~np.isnan(x)]
+    if len(x)<len(y):
+        y = y[-len(x):]
+    print(x,y)
     corr, p = pearsonr(x, y)
     #print('Correlation=%.3f, p=%.3f' % (corr, p))
     if p < alpha:
-	    likelyDependent = True
+        likelyDependent = True
     return p, corr, likelyDependent
 
 
 # COVIDdf = cleanTweetDF(COVIDdf)
 # COVIDdf.to_csv('cleanedForCaseSentiment.csv') #saves new df as csv with normalised cc and removes nan dates to reduce loading time
 
-COVIDdf = pd.read_csv('cleanedForCaseSentiment.csv')
+COVIDdf = pd.read_csv('cleanedForCaseSentiment.csv') #just needs to read as saved processed to the file to speed up testing
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-# plot(WHOdf, COVIDdf, "GBR")
-# plot(WHOdf, COVIDdf, "RUS")
-# plot(WHOdf, COVIDdf, "USA")
-# plot(WHOdf, COVIDdf, "DEU")
-# plot(WHOdf, COVIDdf, "CAN")
+plot(WHOdf, COVIDdf, "GBR")
+plot(WHOdf, COVIDdf, "DEU")
+plot(WHOdf, COVIDdf, "USA")
+plot(WHOdf, COVIDdf, "DEU")
+plot(WHOdf, COVIDdf, "CAN")
 
-def lockdownUK():
-    df = groupDFByMonth("iso_code", "GBR", COVIDdf)
+def lockdownUK(WHOdf, COVIDdf):
+    #df = groupDFByMonth("iso_code", "GBR", COVIDdf)
+    whoiso = groupDFByMonth("iso_code", 'GBR', WHOdf)
+    covidiso = groupDFByMonth("iso_code", 'GBR', COVIDdf)
+
+    whoiso.join(covidiso)
+    df = pd.merge(whoiso, covidiso, left_index=True, right_index=True)
     df = df.reset_index()
     title = " UK Average Sentiment of Tweets Regarding COVID with lockdown information"
     fig, ax = plt.subplots(figsize=(12,10))
+
+
     ax.plot(df.date, df.compound, color='blue')
     ax.set_xlabel("Date")
     ax.set_ylabel("Average Sentiment", color='blue')
     ax.set_title(title)
+
+    ax2 = ax.twinx()
+    ax2.plot(df.date, df.new_cases, color='red')
+    ax2.set_ylabel("New Cases", color="red")
+
     keydates = {'First Lockdown Starts':"2020, 03, 26",
                 'Pubs Reopen':"2020, 06, 04",
                 "Eat Out To Help Out": "2020, 08, 03",
@@ -129,6 +156,66 @@ def lockdownUK():
         lines.append(plt.axvline(x=date, color = colors[i]))
         i+=1
     ax.legend(lines, keydates.keys(), loc='lower right')
+
+        #Conduct hypothesis test at 5% significance level
+    p, corr, result = hypothesisTest(df.new_cases, df.compound, 0.05)
+    plt.text(min(df.date),max(df.compound),"Cases, Sentiment Correlation: " + str(corr), fontsize=13)
     plt.show()
 
-lockdownUK()
+#lockdownUK(WHOdf, COVIDdf)
+
+
+def correlationForCountry(X, country):
+    #return correlation between sentiment and X for a country
+    pass
+
+
+COUNTRIES = np.unique(COVIDdf['iso_code'])
+correlationsCountry = pd.DataFrame()
+for country in COUNTRIES:
+    corr = correlationForCountry(COVIDdf[compound], country)
+    correlationsCountry.append({country: corr})
+
+
+def rateOfChangeInXOverTime(x):
+    #for sentiment and correlation
+    #takes a list of figures and returns the rate of change between points
+    #maybe daily avg 
+    return x
+
+
+
+
+
+
+# whoiso = groupDFByMonth("iso_code", 'GBR', WHOdf)
+# covidiso = groupDFByMonth("iso_code", 'GBR', COVIDdf)
+# whoiso.join(covidiso)
+# df = pd.merge(whoiso, covidiso, left_index=True, right_index=True)
+# df = df.reset_index()
+# df.to_csv('gbrCasesSentiment.csv')
+
+# df = pd.read_csv('gbrCasesSentiment.csv')
+# fig, ax = plt.subplots(figsize=(12,10))
+# x = np.linspace(0, 26, 27)
+# y = df.compound
+
+# fig, ax = plt.subplots(figsize=(12,10))
+# ax.plot(x, y, color = 'green')
+# x = np.linspace(1, 26, 26)
+# theta = np.polyfit(x, (np.sqrt(np.diff(y)**2)), 2)
+# ax.plot(x, np.diff(y), 'o')
+# ax.plot(x, theta[2]+theta[1]*pow(x,1)+theta[0]*pow(x,2), color = 'blue')
+# ax.set_xlabel("Date")
+# ax.set_ylabel("Average Sentiment", color='blue')\
+
+# plt.show()
+
+### DERIVATIVE CURVE INSTEAD OF LINE
+# ax.plot(x, y, color = 'green')
+# x = np.linspace(0, 25, 26)
+# theta = np.polyfit(x, np.diff(y), 2)
+# ax.plot(x, np.diff(y), 'o')
+# ax.plot(x, theta[2]+theta[1]*pow(x,1)+theta[0]*pow(x,2), color = 'blue')
+# ax.set_xlabel("Date")
+# ax.set_ylabel("Average Sentiment", color='blue')
