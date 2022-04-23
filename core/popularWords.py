@@ -58,13 +58,13 @@ def gen(strText,path):
     plt.imshow(wc, interpolation='bilinear')
     plt.axis('off')
     plt.savefig(path)
-    plt.show()
+    #plt.show()
 
 
 #Generate one WordCloud per month
 COVIDdf = COVIDdf[COVIDdf["lang"]=="en"]
 strText = splitByMonth(COVIDdf)
-direct = 'WordCloudsEnglish/'
+direct = 'WordCloudsMask/'
 for month in strText:
     #fileName = direct + str(month.iloc[0]["datetime"].to_period('M')) + ".png"
     fileName = direct + str(month.iloc[0])[-34:-27] + ".png"
