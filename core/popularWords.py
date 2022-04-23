@@ -27,8 +27,9 @@ def getPopularWords(df, amountNeeded):#Input a list of strings and amount of pop
   popularWords = Counter(justWords)
   return (popularWords.most_common(amountNeeded))#Looked into source code of counter and appears to be O(n) time complexity
 
-with open("./processed_data/final_df.json", "r") as file:
-    COVIDdf = pd.read_json(json.load(file))
+#with open("./processed_data/final_csv.txt", "r") as file:
+COVIDdf = pd.read_csv("./processed_data/final_csv.txt")
+COVIDdf.rename(columns={'created_at': 'date'}, inplace=True)
 
 def dfTextToString(df):
     df = create_cleaned(df, 'text')
@@ -63,12 +64,14 @@ def gen(strText,path):
 #Generate one WordCloud per month
 
 strText = splitByMonth(COVIDdf)
-direct = 'WordClouds/'
-
+direct = 'WordCloudsJames/'
 for month in strText:
-    fileName = direct + str(month.iloc[0]["datetime"].to_period('M')) + ".png"
+    #fileName = direct + str(month.iloc[0]["datetime"].to_period('M')) + ".png"
+    fileName = direct + str(month.iloc[0])[-34:-27] + ".png"
+
     src_path = (mod_path / fileName).resolve()
     gen(dfTextToString(month), src_path)
+    
 
 
 #Generate Overall WordCloud
