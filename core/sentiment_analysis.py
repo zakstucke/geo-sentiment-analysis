@@ -17,7 +17,7 @@ except Exception:
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nrclex import NRCLex
 
-from core.cleaner import stripFillerWords
+from cleaner import stripFillerWords
 
 nltk.download("punkt")
 nltk.download("vader_lexicon")
