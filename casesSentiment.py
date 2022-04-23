@@ -109,11 +109,11 @@ def hypothesisTest(x, y, alpha):
 COVIDdf = pd.read_csv('cleanedForCaseSentiment.csv') #just needs to read as saved processed to the file to speed up testing
 
 #ENTER ANY COUNTRY CODE (SOME HAVE MORE TWEETS THAN OTHERS SO WILL SHOW BETTER RESULTS)
-plot(WHOdf, COVIDdf, "GBR")
-plot(WHOdf, COVIDdf, "DEU")
-plot(WHOdf, COVIDdf, "USA")
-plot(WHOdf, COVIDdf, "DEU")
-plot(WHOdf, COVIDdf, "CAN")
+# plot(WHOdf, COVIDdf, "GBR")
+# plot(WHOdf, COVIDdf, "DEU")
+# plot(WHOdf, COVIDdf, "USA")
+# plot(WHOdf, COVIDdf, "DEU")
+# plot(WHOdf, COVIDdf, "CAN")
 
 def lockdownUK(WHOdf, COVIDdf):
     #df = groupDFByMonth("iso_code", "GBR", COVIDdf)
@@ -153,69 +153,9 @@ def lockdownUK(WHOdf, COVIDdf):
     colors = plt.get_cmap('tab20').colors
     i = 0
     for title, date in keydates.items():
-        lines.append(plt.axvline(x=date, color = colors[i]))
+        lines.append(plt.axvline(x=date, color = colors[i], alpha=0.5))
         i+=1
     ax.legend(lines, keydates.keys(), loc='lower right')
-
-        #Conduct hypothesis test at 5% significance level
-    p, corr, result = hypothesisTest(df.new_cases, df.compound, 0.05)
-    plt.text(min(df.date),max(df.compound),"Cases, Sentiment Correlation: " + str(corr), fontsize=13)
     plt.show()
 
-#lockdownUK(WHOdf, COVIDdf)
-
-
-def correlationForCountry(X, country):
-    #return correlation between sentiment and X for a country
-    pass
-
-
-COUNTRIES = np.unique(COVIDdf['iso_code'])
-correlationsCountry = pd.DataFrame()
-for country in COUNTRIES:
-    corr = correlationForCountry(COVIDdf[compound], country)
-    correlationsCountry.append({country: corr})
-
-
-def rateOfChangeInXOverTime(x):
-    #for sentiment and correlation
-    #takes a list of figures and returns the rate of change between points
-    #maybe daily avg 
-    return x
-
-
-
-
-
-
-# whoiso = groupDFByMonth("iso_code", 'GBR', WHOdf)
-# covidiso = groupDFByMonth("iso_code", 'GBR', COVIDdf)
-# whoiso.join(covidiso)
-# df = pd.merge(whoiso, covidiso, left_index=True, right_index=True)
-# df = df.reset_index()
-# df.to_csv('gbrCasesSentiment.csv')
-
-# df = pd.read_csv('gbrCasesSentiment.csv')
-# fig, ax = plt.subplots(figsize=(12,10))
-# x = np.linspace(0, 26, 27)
-# y = df.compound
-
-# fig, ax = plt.subplots(figsize=(12,10))
-# ax.plot(x, y, color = 'green')
-# x = np.linspace(1, 26, 26)
-# theta = np.polyfit(x, (np.sqrt(np.diff(y)**2)), 2)
-# ax.plot(x, np.diff(y), 'o')
-# ax.plot(x, theta[2]+theta[1]*pow(x,1)+theta[0]*pow(x,2), color = 'blue')
-# ax.set_xlabel("Date")
-# ax.set_ylabel("Average Sentiment", color='blue')\
-
-# plt.show()
-
-### DERIVATIVE CURVE INSTEAD OF LINE
-# ax.plot(x, y, color = 'green')
-# x = np.linspace(0, 25, 26)
-# theta = np.polyfit(x, np.diff(y), 2)
-# ax.plot(x, np.diff(y), 'o')
-# ax.plot(x, theta[2]+theta[1]*pow(x,1)+theta[0]*pow(x,2), color = 'blue')
-# ax.set_xlabel("Date")
-# ax.set_ylabel("Average Sentiment", color='blue')
+lockdownUK(WHOdf, COVIDdf)
