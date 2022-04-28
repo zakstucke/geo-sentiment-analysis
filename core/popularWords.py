@@ -54,7 +54,7 @@ covidImage = np.array(Image.open("./images/covidMask.jpg"))
 #generate wordclouds
 def gen(strText,path):
     strText = strText.replace("amp","")
-    wc = WordCloud(background_color='white',stopwords=None,min_word_length=2,mask=covidImage).generate(strText)
+    wc = WordCloud(background_color='white',stopwords=None,min_word_length=2,mask=covidImage,collocations=False).generate(strText)
     plt.figure()
     plt.imshow(wc, interpolation='bilinear')
     plt.axis('off')
@@ -65,7 +65,7 @@ def gen(strText,path):
 #Generate one WordCloud per month
 COVIDdf = COVIDdf[COVIDdf["lang"]=="en"]
 strText = splitByMonth(COVIDdf)
-direct = 'WordCloudsMask/'
+direct = 'NoBigrams/'
 for month in strText:
     #fileName = direct + str(month.iloc[0]["datetime"].to_period('M')) + ".png"
     fileName = direct + str(month.iloc[0])[-34:-27] + ".png"
