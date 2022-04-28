@@ -53,6 +53,7 @@ covidImage = np.array(Image.open("./images/covidMask.jpg"))
 
 #generate wordclouds
 def gen(strText,path):
+    strText = strText.replace("amp","")
     wc = WordCloud(background_color='white',stopwords=None,min_word_length=2,mask=covidImage).generate(strText)
     plt.figure()
     plt.imshow(wc, interpolation='bilinear')
