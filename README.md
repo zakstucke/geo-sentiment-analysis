@@ -1,12 +1,7 @@
-# Setup
+# Extra Images
 
-## Create Virtualenv
+## Figure 1
+![Alt text](images/covidMask.jpg?raw=true "Title")
 
-    	- pip3 install virtualenv
-    	- python3 -m virtualenv venv --python=python3
-    	- source ./venv/bin/activate
-    	- (or equivelent)
-
-## Install packages
-
-    	- pip install -r requirements.txt
+## Figure 2
+![Alt text](images/covidMask.jpg?raw=true "Title")
