@@ -11,6 +11,8 @@ from wordcloud import ImageColorGenerator
 from PIL import Image
 import numpy as np
 from pathlib import Path
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 
 #Get current directory for saving images
 cwd = Path.cwd()
@@ -26,6 +28,20 @@ def getPopularWords(df, amountNeeded):#Input a list of strings and amount of pop
   justWords = inOne.split()#Splitting into words
   popularWords = Counter(justWords)
   return (popularWords.most_common(amountNeeded))#Looked into source code of counter and appears to be O(n) time complexity
+
+def SentimentOfPopularWords(df,amountNeeded):
+    popularWords = getPopularWords(df,amountNeeded)
+    sia = SentimentIntensityAnalyzer()
+    total = 0
+    toDiv = 0
+    for words in popularWords:
+        score = sia.polarity_scores(words[0])["compound"]*words[1]
+        total += score
+        toDiv += words[1]
+    total = total / toDiv
+    print(str(total))
+    return total
+    #SentimentAnalysis
 
 #with open("./processed_data/final_csv.txt", "r") as file:
 COVIDdf = pd.read_csv("./processed_data/final_csv.txt")
@@ -72,6 +88,8 @@ for month in strText:
 
     src_path = (mod_path / fileName).resolve()
     gen(dfTextToString(month), src_path)
+    print(src_path)
+    SentimentOfPopularWords(month,200)
     
 
 
