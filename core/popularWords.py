@@ -23,13 +23,16 @@ pd.options.mode.chained_assignment = None # default='warn' this is needed for fa
 
 def getPopularWords(df, amountNeeded):#Input a list of strings and amount of popular words needed, returns a list of popular words
   inOne = ""
-  for message in df.text:
-    inOne += message + " "
+
+  for messages in df.cleaned_words.tolist():
+        words = messages.split(",")
+        for word in words:
+            inOne += word[2:-1].replace("'","") + " "
   justWords = inOne.split()#Splitting into words
   popularWords = Counter(justWords)
   return (popularWords.most_common(amountNeeded))#Looked into source code of counter and appears to be O(n) time complexity
 
-def SentimentOfPopularWords(df,amountNeeded):
+def SentimentOfPopularWords(df,amountNeeded,wordFile):
     popularWords = getPopularWords(df,amountNeeded)
     sia = SentimentIntensityAnalyzer()
     total = 0
@@ -38,8 +41,11 @@ def SentimentOfPopularWords(df,amountNeeded):
         score = sia.polarity_scores(words[0])["compound"]*words[1]
         total += score
         toDiv += words[1]
+        
+        try: wordFile.write(str(words[0] + " " + str(words[1]) + " " + str(sia.polarity_scores(words[0])["pos"]) + " " + str(sia.polarity_scores(words[0])["neg"]) + " " + str(sia.polarity_scores(words[0])["compound"]) + ","))
+        except: wordFile.write(str("EMOJI" + " " + str(words[1]) + " " + str(sia.polarity_scores(words[0])["pos"]) + " " + str(sia.polarity_scores(words[0])["neg"]) + " " + str(sia.polarity_scores(words[0])["compound"]) + ","))
     total = total / toDiv
-    print(str(total))
+    wordFile.write(str("\n" + str(total)))
     return total
     #SentimentAnalysis
 
@@ -82,15 +88,19 @@ def gen(strText,path):
 COVIDdf = COVIDdf[COVIDdf["lang"]=="en"]
 strText = splitByMonth(COVIDdf)
 direct = 'NoBigrams/'
+WordSentimentFile = open("SentimentOfPopularWords.txt","w")
+WordSentimentFile.write("Per month: words separated by commas with: word count pos neg compound \n")
 for month in strText:
     #fileName = direct + str(month.iloc[0]["datetime"].to_period('M')) + ".png"
     fileName = direct + str(month.iloc[0])[-34:-27] + ".png"
 
     src_path = (mod_path / fileName).resolve()
-    gen(dfTextToString(month), src_path)
-    print(src_path)
-    SentimentOfPopularWords(month,200)
-    
+    #gen(dfTextToString(month), src_path)
+    WordSentimentFile.write(str(month.iloc[0])[-34:-27])
+    print(str(month.iloc[0])[-34:-27])
+    WordSentimentFile.write("\n")
+    SentimentOfPopularWords(month,200,WordSentimentFile)
+WordSentimentFile.close()
 
 
 #Generate Overall WordCloud
