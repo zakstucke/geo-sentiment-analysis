@@ -9,7 +9,10 @@ Zachary Stucke - fg19893@bristol.ac.uk
 
 ## Appendix Images
 ### Figure 1
-![Alt text](images/covidMask.jpg?raw=true "Title")
+![Alt text](images/word_cloud_1.png?raw=true "Original word cloud")
 
 ### Figure 2
-![Alt text](images/covidMask.jpg?raw=true "Title")
+![Alt text](images/word_cloud_2.png?raw=true "Cleaned word cloud")
+
+### Figure 3
+![Alt text](images/word_cloud_3.png?raw=true "English word cloud")
