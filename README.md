@@ -18,4 +18,4 @@ Zachary Stucke - fg19893@bristol.ac.uk
 ![Alt text](images/word_cloud_3.png?raw=true "English word cloud")
 
 ### Figure 4
-![Alt text](images/word_cloud_mask.png?raw=true "Word cloud with mask")
+![Alt text](images/WordCloudMasked.png?raw=true "Word cloud with mask")
